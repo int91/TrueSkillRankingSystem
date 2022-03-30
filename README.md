@@ -1,0 +1,1 @@
+The "True-Skill" ranking system is a set of formulas, weights, and other calculations that are designed to determine a player's true skill based solely on their statistics. Right now it only calculates MMR / ELO gained and MMR / ELO lost. Later down the line it is planned to calculate skill based on their relativity and consistency to their own stats and capabilities.

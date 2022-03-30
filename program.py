@@ -162,8 +162,11 @@ POS_WEIGHT = 1.2 #POS_WEIGHT * LeaderboardPosition = outcome for this (This isn'
 RANKS = 5
 RANK_WEIGHT = 0.4
 
-LOSS_WEIGHT = 0.825
+LOSS_WEIGHT = 0.6
 DEATH_WEIGHT = 1
+
+ENEMY_SKILL_WEIGHT = 0.3
+TEAM_SKILL_WEIGHT = 1
 
 END_RESULT_DIV = 24
 
@@ -179,29 +182,33 @@ class EloCalculator():
         relAssist: float = 0
         relObjs: float = 0
         
-        totalKills: int = 0
-        totalDeaths: int = 0
-        totalAssists: int = 0
-        totalObjs: int = 0
+        medianKills: int = 0
+        medianDeaths: int = 0
+        medianAssists: int = 0
+        medianObjs: int = 0
         
         killsArr: List[int] = []
         deathsArr: List[int] = []
         assistArr: List[int] = []
         objArr: List[int] = []
         
-        if (p in team):
-            team.remove(p)
+        #If the player accidentally gets put in the team array then remove them
+        #if (p in team):
+            #team.remove(p)
         
         for e in team:
+            #Adds all team data to respective arrays
             killsArr.append(e.kills)
             deathsArr.append(e.deaths)
             assistArr.append(e.assists)
             objArr.append(e.objs)
             
-            #totalKills += e.kills
-            #totalDeaths += e.deaths
-            #totalAssists += e.assists
-            #totalObjs += e.objs
+            
+            #TODO: Remove all comments below
+            #medianKills += e.kills
+            #medianDeaths += e.deaths
+            #medianAssists += e.assists
+            #medianObjs += e.objs
             
             #NOTE: This is a placeholder system for now
             #relKills += (p.kills-e.deaths)/e.deaths #relative deaths to this enemy
@@ -211,16 +218,29 @@ class EloCalculator():
             #if (e.objs != 0):
                 #relObjs += (p.objs-e.objs)/e.objs #relative objective points to this enemy
 
-        totalKills = statistics.median(killsArr)
-        totalDeaths = statistics.median(deathsArr)
-        totalAssists = statistics.median(assistArr)
-        totalObjs = statistics.median(objArr)
+        killsArr.sort()
+        deathsArr.sort()
+        assistArr.sort()
+        objArr.sort()
 
-        relKills = (p.kills-totalKills)/totalKills
-        relDeaths = (totalDeaths-p.deaths)/p.deaths
-        relAssist = (p.assists-totalAssists)/totalAssists
-        relObjs = (p.objs-totalObjs)/totalObjs
+        #Takes the median of the array data
+        medianKills = statistics.mean(killsArr)
+        medianDeaths = statistics.mean(deathsArr)
+        medianAssists = statistics.mean(assistArr)
+        medianObjs = statistics.mean(objArr)
+
+        relKills = (p.kills-medianKills)/medianKills
+        relDeaths = (medianDeaths-p.deaths)/p.deaths
+        if (medianAssists != 0):
+            relAssist = (p.assists-medianAssists)/medianAssists
+        else:
+            relAssist = p.assists
+        if (medianObjs != 0):
+            relObjs = (p.objs-medianObjs)/medianObjs
+        else:
+            relObjs = p.objs
         
+        #TODO: Remove this
         #Gets average of relatives
         #teamSize = len(team)
         #relKills /= teamSize
@@ -237,38 +257,26 @@ class EloCalculator():
     #Adjust params to better fit the functions purpose
     def CalculateElo(self, p: Player, lPos: int, won: bool, rank: int = 1, Teammates=None) -> int:
         result: float = 0
-        #Get the avg values of team stats
-        #Get relative values of enemy stats
         
-        #Calculate team first, then enemy team
+        #Testing data set (Taken from a pro-league SnD match)
+        e1 = Player(9, 6, 2, 0)
+        e2 = Player(11, 6, 3, 1)
+        e3 = Player(3, 6, 2, 1)
+        e4 = Player(1, 5, 0, 0)
+        e5 = Player(12, 6, 4, 0)
         
-        #TODO: Implement team calculations. Note: Use a new method - self.CalculateAverage and pass in the player and their team
-        #Team averages excludes player
-        #teamAvgKills: float = 3 #Avg kills of team
-        #teamAvgDeaths: float = 5 #Avg deaths of team
-        #teamAvgAssists: float = 10 #Avg assists of team
-        #teamAvgObj: float = 3 #Avg objs of team
-        
-        #Test data set of 2 out of the 4 enemy players (stats taken from a Pro-League Search & Destroy match)
-        e1 = Player(23, 19, 6, 60)
-        e2 = Player(18, 21, 5, 54)
-        e3 = Player(15, 22, 8, 90)
-        e4 = Player(14, 21, 6, 54)
-        e5 = Player(15, 21, 5, 47)
-        
-        f1 = Player(17, 16, 6, 17)
-        f2 = Player(20, 16, 11, 15)
-        f3 = Player(8, 20, 6, 66)
-        f4 = Player(8, 16, 5, 28)
+        f1 = Player(3, 8, 3, 1)
+        f2 = Player(5, 7, 0, 1)
+        f3 = Player(6, 7, 2, 1)
+        f4 = Player(6, 8, 1, 0)
         
         enemyTeam: List[Player] = [e1, e2, e3, e4, e5]
-        playersTeam: List[Player] = [f1, f2, f3, f4]
-        #Getting average relatives of the player to the enemy team
-        #TODO: Replace relative calc with avg calc then do relatives based on team and enemy after this Note: Use a new method - self.CalculateAverage and pass in the player and their team
+        playersTeam: List[Player] = [f1, f2, f3, f4] #self.CalculateRelatives will remove the player from this array
+        
+        #Getting relatives of the player to the enemy team and their team
         eTeamRels = self.CalculateRelatives(p, enemyTeam)
         pTeamRels = self.CalculateRelatives(p, playersTeam)
         
-        #TODO: Convert Self.CalculateRelatives into a function that only does relative calculation for player & X user (I think)
         enemyRelKills: float = eTeamRels[0]
         enemyRelDeaths: float = eTeamRels[1]
         enemyRelAssists: float = eTeamRels[2]
@@ -283,50 +291,39 @@ class EloCalculator():
         relDeaths: float = 0
         relAssist: float = 0
         relObjs: float = 0
-        #relatives here are percentages * 100 for more accuracy with weights
         
-        #relKills = (p.kills-teamAvgKills)/teamAvgKills * 100 #relative kills
-        #relDeaths = (teamAvgDeaths-p.deaths)/p.deaths * 100 #relative deaths
-        #if (p.assists != 0):
-        #   relAssist = (p.assists-teamAvgAssists)/teamAvgAssists * 100 #relative assists
-        #relObjs = (p.objs-teamAvgObj)/teamAvgObj * 100 #relative objective points
+        #Adds all data * 100
+        relKills += (enemyRelKills * 100) * ENEMY_SKILL_WEIGHT
+        relDeaths += (enemyRelDeaths * 100) * ENEMY_SKILL_WEIGHT
+        relAssist += (enemyRelAssists * 100) * ENEMY_SKILL_WEIGHT
+        relObjs += (enemyRelObj * 100) * ENEMY_SKILL_WEIGHT
         
-        
-        relKills += enemyRelKills * 100
-        relDeaths += enemyRelDeaths * 100
-        relAssist += enemyRelAssists * 100
-        relObjs += enemyRelObj * 100
-        
-        relKills += playerRelKills * 100
-        relDeaths += playerRelKills * 100
-        relAssist += playerRelKills * 100
-        relObjs += playerRelKills * 100
-        
-        #TODO: Remove this
-        #print(relKills)
-        #print(relDeaths)
-        #print(relAssist)
-        #print(relObjs)
+        relKills += (playerRelKills * 100) * TEAM_SKILL_WEIGHT
+        relDeaths += (playerRelKills * 100) * TEAM_SKILL_WEIGHT
+        relAssist += (playerRelKills * 100)* TEAM_SKILL_WEIGHT
+        relObjs += (playerRelKills * 100) * TEAM_SKILL_WEIGHT
         
         result += relKills * KILL_WEIGHT
         result += relAssist * ASSIST_WEIGHT
         result += relObjs * OBJ_WEIGHT
-        print(result)
         result -= relDeaths * DEATH_WEIGHT
-        print(result)
-        
-        #TODO: Remove this
-        #result += p.kills * KILL_WEIGHT
-        #result += p.assists * ASSIST_WEIGHT
-        #result += p.objs * OBJ_WEIGHT
-        #result += (lPos-4) * -POS_WEIGHT
-        #result += p.deaths * -DEATH_WEIGHT
         
         #TODO: Add better win loss cases that better reflect the affect of each outcome
+        #NOTE: I think this is done, not quite sure atm
         if (won):
-            result *= WIN_WEIGHT
+            
+            if (result < 0):
+                result += result * (1-WIN_WEIGHT)
+            else:
+                result *= WIN_WEIGHT
+                
         else:
-            result *= LOSS_WEIGHT #Determine something for weighting losses
+            
+            if (result < 0):
+                result += result * (1-LOSS_WEIGHT)
+            else:
+                result *= LOSS_WEIGHT
+                
         
         if (rank >= 1):
             result *= (RANKS-rank)*RANK_WEIGHT
@@ -334,6 +331,7 @@ class EloCalculator():
         return math.ceil(result/END_RESULT_DIV)
 
     #Seems fine for now but you get Diamond after winning ALL placements
+    #This will be used until the new system is read to be used
     def LegacyEloCalculate(self, rank: int, result: bool, lPlace: int, winstreak: int = 0) -> int:
         elo: int = 0
         if (result):
@@ -344,7 +342,7 @@ class EloCalculator():
                 
             if (rank == 0 and winstreak != 0):
             #If unranked and on winstreak calculate bonus
-                elo += -int(((rank-6) * 3 * (winstreak+1*1.5)))
+                elo += -int(((rank-6) * 3 * ((winstreak+1)*1.5)))
             elif (winstreak == 0 and result):
             #If not unranked calculate sub based on rank out of max ranks
                 elo += -int((rank-6) * 3)
@@ -363,40 +361,21 @@ class EloCalculator():
             
         return elo
 
-#TODO: Remove this for now
-#lastMatch: Match = Match()
-
-#myUser: User = User(1, "zen")
-
-#lastMatch.team1.append(myUser)
-
-#lastMatch.SetStats(1, 1, "hp", 10, 3, 5, 40, True)
-#lastMatch.SetStats(1, 2, "hp", 10, 3, 5, 40, True)
-#lastMatch.Print()
-
-#TODO: Implement a better test data set that includes team 1 and team 2
 e = EloCalculator()
 
 myP: Player = Player()
-myP.kills = 50 #30 #50
-myP.deaths = 17 #20 #17
-myP.assists = 59 #15 #59
-myP.objs = 53 #30 #53
+myP.kills = 9 #30 #50
+myP.deaths = 6 #20 #17
+myP.assists = 1 #15 #59
+myP.objs = 1 #30 #53
 
-print(f"New System: {e.CalculateElo(myP, 1, True)}")
-print(f"Legacy Elo (Fixed) System: {e.LegacyEloCalculate(3, True, 4)}")
-print(f"Legacy Elo (Fixed) System: {e.LegacyEloCalculate(3, False, 4, 0)}")
+print(f"New System: {e.CalculateElo(myP, 1, False, 0)}")
 
-
-
-#TODO: Remove this
 """
-print(LegacyEloCalculate(0, True, 1))
-print(LegacyEloCalculate(4, True, 3))
-print(LegacyEloCalculate(2, True, 4))
-print(LegacyEloCalculate(3, False, 1))
-print(LegacyEloCalculate(2, False, 3))
-print(LegacyEloCalculate(0, False, 4))
-print(LegacyEloCalculate(0, True, 1, 1)+LegacyEloCalculate(0, True, 1, 2)+LegacyEloCalculate(0, True, 1, 3)+LegacyEloCalculate(0, True, 1, 4)+LegacyEloCalculate(0, True, 1, 4))
-print(LegacyEloCalculate(0, True, 1, 1)+LegacyEloCalculate(0, True, 1, 2)+LegacyEloCalculate(0, True, 1, 3)+LegacyEloCalculate(0, False, 1, 0)+LegacyEloCalculate(0, False, 1, 0))
+print(f"Legacy Elo (Fixed) System: {e.LegacyEloCalculate(0, True, 1)}")
+print(f"Legacy Elo (Fixed) System: {e.LegacyEloCalculate(0, True, 1, 1)}")
+print(f"Legacy Elo (Fixed) System: {e.LegacyEloCalculate(0, True, 1, 2)}")
+print(f"Legacy Elo (Fixed) System: {e.LegacyEloCalculate(0, True, 1, 3)}")
+print(f"Legacy Elo (Fixed) System: {e.LegacyEloCalculate(0, True, 1, 4)}")
+print(f"Legacy Elo (Fixed) System: {e.LegacyEloCalculate(1, False, 4)}")
 """
