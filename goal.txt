@@ -1,4 +1,4 @@
-Take the average statistic for all of your teammates (avg kills, deaths, etc.) and then calculate the relative of your stats to theirs.
+Take the median statistic for all of your teammates (median kills, deaths, etc.) and then calculate the relative of your stats to theirs.
 Apply various weights accordingly.
 Calculate the relative of each stat for the enemy team to you and then apply weights accordingly.
 Add all of that together, divide by 12 and boom you're good
