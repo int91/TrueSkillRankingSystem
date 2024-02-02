@@ -80,34 +80,27 @@ class Match():
                 return i
         return None
 
-    def SetPlayerStats(self, id: int, kil: int, det: int, assis: int, obj: int):
-        p: Player = self.GetPlayerById(id)
-        if (p != None): 
-            p.kills = kil
-            p.deaths = det
-            p.assists = assis
-            p.objs = obj
+    def SetPlayerStats(self, pStats: PlayerRoundStats, kil: int, det: int, assis: int, obj: int):
+        if (pStats != None): 
+            pStats.kills = kil
+            pStats.deaths = det
+            pStats.assists = assis
+            pStats.objs = obj
         else:
-            print("[ERROR] Player could not be found")
+            print("[ERROR] PlayerRoundStats could not be found")
     
-    def SetStats(self, id: int, game: int, gamemode: str, kills: int, deaths: int, assists: int, objs: int, result: bool = True):
-        if (self.UserInMatch(id)):
+    def SetStats(self, id: int, kills: int, deaths: int, assists: int, objs: int, won_game: bool = True):
+        if (self.GetPlayerById(id)):
             p: Player = Player()
-            pList: List[Player] = self.GetPlayerList(p)
-            team: int = self.GetTeamById(id)
-            p.deaths = deaths
-            p.objs = objs
-            p.kills = kills
-            p.assists = assists
-            if (pList == None):
-                pList = []
-            pList.append(p)
-            if (team == 1):
-                self.team1Result[game-1] = result              
-                self.gamesTeam1.append(pList)
-            elif (team == 2):
-                self.team1Result[game-1] = result
-                self.gamesTeam2.append(pList)
+            p.total_deaths += deaths
+            p.total_objs += objs
+            p.total_kills += kills
+            p.total_assists += assists
+            p.total_gamesPlayed += 1
+            if (won_game):
+                p.total_wins += 1
+            else:
+                p.total_loss += 1
 
 #Place holder weights for ranking system
 WIN_WEIGHT = 1.45
@@ -159,21 +152,6 @@ class EloCalculator():
             deathsArr.append(e.deaths)
             assistArr.append(e.assists)
             objArr.append(e.objs)
-            
-            
-            #TODO: Remove all comments below
-            #medianKills += e.kills
-            #medianDeaths += e.deaths
-            #medianAssists += e.assists
-            #medianObjs += e.objs
-            
-            #NOTE: This is a placeholder system for now
-            #relKills += (p.kills-e.deaths)/e.deaths #relative deaths to this enemy
-            #relDeaths += (e.deaths-p.deaths)/p.deaths #relative deaths to this enemy
-            #if (e.assists != 0):
-                #relAssist += (p.assists-e.assists)/e.assists #relative assists to this enemy
-            #if (e.objs != 0):
-                #relObjs += (p.objs-e.objs)/e.objs #relative objective points to this enemy
 
         killsArr.sort()
         deathsArr.sort()
@@ -196,14 +174,6 @@ class EloCalculator():
             relObjs = (p.objs-medianObjs)/medianObjs
         else:
             relObjs = p.objs
-        
-        #TODO: Remove this
-        #Gets average of relatives
-        #teamSize = len(team)
-        #relKills /= teamSize
-        #relDeaths /= teamSize
-        #relAssist /= teamSize
-        #relObjs /= teamSize
         
         results = [relKills, relDeaths, relAssist, relObjs]
         print(results)
