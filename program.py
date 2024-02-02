@@ -8,56 +8,58 @@ import statistics
 
 #NOTE: Once match ends. After result has been retrieved notify any @admin and tell them to give respective stats. (this is for the discord bot that will be made later on)
 
-class User():
-    def __init__(self, id: int, nme: str):
-        #Discord Bot Vars
-        self.uid: int = id
+class Player():
+    def __init__(self, uid: int = 0, nme: str = ""):
+        #Player's discord user id & name of their account in the service
+        self.uid: int = uid
         self.name: str = nme
 
-        #Total Stats
-        self.gamesPlayed: int = 0
+        self.total_gamesPlayed: int = 0
+        self.total_kills: int = 0
+        self.total_deaths: int = 0
+        self.total_assists: int = 0
+        self.total_objs: int = 0
+        self.total_wins: int = 0
+        self.total_loss: int = 0
+
+        #Most recent match data
+        self.last_match_played: Match = None
+        self.last_match_performance: PlayerMatchStats = None
+
+        self.match_stats_cache: List[PlayerMatchStats] = []
+
+class PlayerMatchStats():
+    def __init__(self):
+        self.expected_match_result: bool = False #False = loss. True = win
+        self.round_stats: List[PlayerRoundStats] = []
+
+class PlayerRoundStats():
+    def __init__(self):
         self.kills: int = 0
         self.deaths: int = 0
         self.assists: int = 0
         self.objs: int = 0
-        self.wins: int = 0
-        self.loss: int = 0
 
-        #Recent Match
-        self.recentMatch: Match = Match()
-
-class Player():
-    def __init__(self, ks: int = 0, dt: int = 0, ass: int = 0, ob: int = 0,):
-        #Player's discord user
-        self.user: User = None
-
-        #Player's stats for that game (NOT MATCH)
-        self.kills: int = ks
-        self.deaths: int = dt
-        self.assists: int = ass
-        self.objs: int = ob
-
-#NOTE: Don't worry about this useless sh*t right here. does nothing atm
 class Match():
     def __init__(self):
         #The matches id used for referencing
         self.id: int = 0
         
         #Users In Each Team
-        self.team1: List[User] = []
-        self.team2: List[User] = []
+        self.team1: List[Player] = []
+        self.team2: List[Player] = []
 
         #command would be ;givestats 1 uid/name kills, deaths, assists, objpoints/time
         #1 meaning game 1
         
         #Stats for each player & game within the best of 3
         #Each index is a list of that player's stats for index of game number
-        self.gamesTeam1: List[List[Player]] = [] 
-        self.gamesTeam2: List[List[Player]] = []
+        self.gamesTeam1: List[PlayerMatchStats] = [] 
+        self.gamesTeam2: List[PlayerMatchStats] = []
 
         #Matches won for each team
         #(If one team has 2 wins and the other has 0,
-        # then that match didn't get played due to best of 3)
+        # then that match didn't get played due to best of 3 rule)
         self.team1Result: List[bool] = [False, False, None]
         self.team2Result: List[bool] = [False, False, None]
     
@@ -68,15 +70,6 @@ class Match():
         print(self.gamesTeam2)
         print(self.team1Result)
         print(self.team2Result)
-        
-    def UserInMatch(self, id: int) -> bool:
-        for i in self.team1:  
-            if (i.uid == id): 
-                return True
-        for i in self.team2: 
-            if (i.uid == id): 
-                return True
-        return False
 
     def GetPlayerById(self, id: int) -> Player:
         for i in self.team1:  
@@ -85,42 +78,6 @@ class Match():
         for i in self.team2: 
             if (i.uid == id): 
                 return i
-        return None
-
-    def GetMatchPlayerById(self, id: int) -> Player:
-        for i in self.gamesTeam1:
-            if (i[0].user.uid == id):
-                return i
-        for i in self.gamesTeam2:
-            if (i[0].user.uid == id):
-                return i
-        return None
-    
-    def GetTeamById(self, id: int) -> int:
-        for i in self.team1:
-            if (i.uid == id):
-                return 1
-        for i in self.team2:
-            if (i.uid == id):
-                return 2
-        return 0
-
-    def GetTeamByPlayer(self, p: Player) -> int:
-        for i in self.gamesTeam1:
-            if (i[0] == p):
-                return 1
-        for i in self.gamesTeam2:
-            if (i[0] == p):
-                return 2
-        return 0
-    
-    def GetPlayerList(self, p: Player) -> List[Player]:
-        for i in self.gamesTeam1:
-            if (i[0] == p):
-                return i
-        for i in self.gamesTeam2:
-            if (i[0] == p):
-                return i 
         return None
 
     def SetPlayerStats(self, id: int, kil: int, det: int, assis: int, obj: int):
